@@ -64,4 +64,4 @@ else:
     with zipfile.ZipFile(archive, "w", compression=zipfile.ZIP_DEFLATED) as zf:
         zf.write(exe, exe.name)
         zf.write(ROOT / "下载使用说明.md", "使用说明.md")
-print(f"可分发文件：{archive}")
+print("Build complete. Artifact is in dist/.")
