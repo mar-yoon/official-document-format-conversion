@@ -1,0 +1,5 @@
+{
+  "pages": ["pages/index/index"],
+  "window": {"navigationBarTitleText": "公文格式助手", "navigationBarBackgroundColor": "#F7F5F0", "navigationBarTextStyle": "black", "backgroundColor": "#F7F5F0"},
+  "style": "v2"
+}

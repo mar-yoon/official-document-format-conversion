@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#f7f5f0">
+  <title>公文格式助手</title>
+  <link rel="stylesheet" href="/app.css">
+</head>
+<body>
+  <main class="shell">
+    <header class="topbar"><div class="brand"><span class="mark">文</span><span>公文格式助手</span></div><span class="version">本地版 · v1.0</span></header>
+    <section class="hero">
+      <div class="hero-copy"><div class="eyebrow">DOCUMENT FORMAT STUDIO</div><h1>让格式回归标准，<br><em>把时间留给内容。</em></h1><p>上传 Word 文档，选择格式模板，检查识别结果，下载排版后的文件。文档由当前连接的服务器处理。</p><div class="hero-tags"><span>规范驱动</span><span>内容保留</span><span>模板可扩展</span></div></div>
+      <div class="hero-art" aria-hidden="true"><div class="paper"><span class="paper-ribbon"></span><span class="paper-heading"></span><span class="paper-title"></span><span class="paper-line wide"></span><span class="paper-line"></span><span class="paper-line wide"></span><span class="paper-line short"></span><span class="paper-line wide"></span><span class="paper-line"></span><span class="paper-stamp">规范</span></div></div>
+    </section>
+    <section class="workspace" aria-labelledby="workspace-title">
+      <div class="section-title"><div><span class="step-label">01 / 开始处理</span><h2 id="workspace-title">上传并排版文档</h2></div><span class="local-badge"><i></i>服务端处理</span></div>
+      <div class="columns"><div class="main-column">
+        <label class="field-label" for="template">格式模板</label><div class="select-wrap"><select id="template" aria-label="格式模板"><option value="gov_official">党政机关公文通用排版</option></select><span class="chevron">⌄</span></div>
+        <div id="dropzone" class="dropzone" tabindex="0" role="button" aria-label="选择 Word 文档"><input id="file" type="file" accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document" hidden><div class="upload-icon">↥</div><strong>拖放文档到这里，或点击选择</strong><p>支持 .docx 格式 · 最大 15 MB</p><button id="choose" class="text-button" type="button">选择文档 <span>↗</span></button></div>
+        <div id="file-card" class="file-card hidden"><div class="file-icon">W</div><div class="file-meta"><strong id="filename"></strong><span id="filesize"></span></div><button id="remove" type="button" aria-label="移除文档">×</button></div>
+        <div id="message" class="message hidden" role="status"></div>
+        <button id="format" class="primary" type="button" disabled>生成标准格式文档 <span>→</span></button>
+      </div><aside class="side-column"><div class="aside-card"><span class="aside-kicker">当前模板</span><h3>党政机关公文</h3><p>依据 GB/T 9704—2012 设置 A4 页面、版心、字体字号与常见段落层级。</p><div class="spec-list"><div><span>纸张</span><strong>A4 · 210 × 297 mm</strong></div><div><span>版心</span><strong>156 × 225 mm</strong></div><div><span>正文</span><strong>3 号仿宋</strong></div><div><span>标题</span><strong>2 号小标宋</strong></div></div><a href="https://openstd.samr.gov.cn/bzgk/std/newGbInfo?hcno=F3CC9BEF482524C895FDA7A08BB4A70E" target="_blank" rel="noopener noreferrer">查看标准依据 ↗</a></div><div class="note"><span>✦</span><p>系统会保留原文文字、图片和表格。公文的印章、红头、页码与复杂版式仍需人工复核。</p></div></aside></div>
+    </section>
+    <section id="report" class="report hidden" aria-live="polite"><div class="section-title"><div><span class="step-label">02 / 识别结果</span><h2>排版检查</h2></div><span id="report-status" class="status">待处理</span></div><div class="report-grid"><div><span>识别标题</span><strong id="report-title"></strong></div><div><span>段落数量</span><strong id="report-count"></strong></div><div><span>处理依据</span><strong id="report-basis"></strong></div></div><div id="warning-box" class="warnings"></div></section>
+    <footer><span>公文格式助手</span><span>后续可新增高校论文、单位专用及其他格式模板</span></footer>
+  </main>
+  <script src="/app.js"></script>
+</body>
+</html>

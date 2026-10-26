@@ -1,0 +1,10 @@
+<view class="page">
+  <view class="hero"><view class="eyebrow">DOCUMENT FORMAT STUDIO</view><view class="headline">让格式回归标准<text>把时间留给内容</text></view><view class="lead">上传 Word 文档，自动调整常见公文排版，并查看需要人工复核的项目。</view><view class="tag-row"><text>规范驱动</text><text>保留内容</text><text>模板可扩展</text></view></view>
+  <view class="panel"><view class="section-meta">01 / 开始处理</view><view class="section-title">上传并排版文档</view><view class="field-label">格式模板</view><view class="template"><view class="template-icon">文</view><view><view class="template-name">党政机关公文通用排版</view><view class="template-note">GB/T 9704—2012</view></view><text class="check">✓</text></view>
+    <view class="upload" bindtap="chooseFile"><view class="upload-icon">↥</view><view class="upload-title">{{fileName || '点击选择 Word 文档'}}</view><view class="upload-note">{{fileName ? fileSizeLabel : '支持从微信聊天记录中选择 .docx，最大 9 MB'}}</view><view class="choose-link">{{fileName ? '重新选择' : '选择文档'}} ↗</view></view>
+    <button class="primary" disabled="{{!filePath || busy}}" loading="{{busy}}" bindtap="formatDocument">{{busy ? '正在处理文档' : '生成标准格式文档'}} <text wx:if="{{!busy}}">→</text></button>
+    <view wx:if="{{error}}" class="error">{{error}}</view>
+  </view>
+  <view wx:if="{{report}}" class="panel result"><view class="section-meta">02 / 识别结果</view><view class="section-title">排版检查</view><view class="result-row"><text>识别标题</text><text>{{report.title || '未检测到'}}</text></view><view class="result-row"><text>段落数量</text><text>{{report.paragraphs}}</text></view><view class="result-row"><text>处理依据</text><text>{{report.basis}}</text></view><view wx:if="{{report.warnings.length}}" class="warnings"><view class="warning-title">请复核</view><view wx:for="{{report.warnings}}" wx:key="index" class="warning-item">· {{item}}</view></view><button class="secondary" bindtap="openResult">打开排版后的文档 ↗</button><view class="expires">文档下载链接 15 分钟后过期，请及时打开或保存。</view></view>
+  <view class="note"><text>✦</text><view>会保留原文中的图片与表格。印章、红头、页码及复杂版式需人工复核。上传的文档会发送到您配置的服务器处理。</view></view>
+</view>
