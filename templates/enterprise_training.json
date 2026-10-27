@@ -1,0 +1,27 @@
+{
+  "id": "enterprise_training",
+  "name": "国企公文（培训材料版）",
+  "version": "1.0",
+  "basis": "《公文格式培训》第2—14页",
+  "source_url": "",
+  "page": {"width_mm": 210, "height_mm": 297, "top_mm": 37, "bottom_mm": 35, "left_mm": 28, "right_mm": 26},
+  "default": {"font": "仿宋_GB2312", "latin_font": "Times New Roman", "size_pt": 16, "line_pt": 28, "color": "000000", "align": "both", "first_line_chars": 2},
+  "roles": {
+    "title": {"font": "方正小标宋简体", "size_pt": 22, "align": "center", "first_line_chars": 0, "bold": false},
+    "agency": {"font": "方正小标宋简体", "size_pt": 22, "align": "center", "first_line_chars": 0},
+    "doc_number": {"align": "center", "first_line_chars": 0},
+    "recipient": {"first_line_chars": 0},
+    "heading_1": {"font": "黑体", "size_pt": 16, "bold": false},
+    "heading_2": {"font": "楷体_GB2312", "size_pt": 16, "bold": false},
+    "heading_3": {"font": "仿宋_GB2312", "size_pt": 16, "bold": false},
+    "heading_4": {"font": "仿宋_GB2312", "size_pt": 16, "bold": false},
+    "body": {},
+    "attachment": {"space_before_pt": 28},
+    "attachment_label": {"font": "黑体", "size_pt": 16, "first_line_chars": 0},
+    "image": {"align": "center", "first_line_chars": 0, "line_rule": "auto"},
+    "table": {"font": "宋体", "size_pt": 14, "preserve_paragraph": true},
+    "signature": {"align": "right", "first_line_chars": 0},
+    "date": {"align": "right", "first_line_chars": 0}
+  },
+  "footer_page_number": {"font": "宋体", "size_pt": 14}
+}

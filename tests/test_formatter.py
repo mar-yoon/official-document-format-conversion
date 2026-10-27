@@ -11,7 +11,7 @@ from xml.etree import ElementTree as ET
 
 from app import Handler
 from desktop import next_output_path, write_output
-from formatter import FormatError, W, format_docx, inspect
+from formatter import FormatError, W, format_docx, inspect, load_templates
 
 
 def fixture():
@@ -47,6 +47,48 @@ class FormatterTests(unittest.TestCase):
     def test_invalid_input_rejected(self):
         with self.assertRaises(FormatError):
             inspect(b"not a docx")
+
+    def test_enterprise_training_template_formats_special_content(self):
+        self.assertEqual(load_templates()[0]["id"], "gov_official")
+        self.assertIn("enterprise_training", [item["id"] for item in load_templates()])
+        paragraphs = [
+            "<w:p><w:r><w:t>关于培训的通知</w:t></w:r></w:p>",
+            "<w:p><w:r><w:t>正文含 ABC 123。</w:t></w:r></w:p>",
+            "<w:p><w:r><w:t>一、工作安排</w:t></w:r></w:p>",
+            "<w:p><w:r><w:t>附件：材料清单</w:t></w:r></w:p>",
+            "<w:p><w:r><w:t>附件1：</w:t></w:r></w:p>",
+            "<w:p><w:r><w:drawing/></w:r></w:p>",
+            "<w:tbl><w:tr><w:tc><w:p><w:pPr><w:spacing w:line=\"400\"/></w:pPr><w:r><w:t>表格内容</w:t></w:r></w:p></w:tc></w:tr></w:tbl>",
+        ]
+        document = f'<w:document xmlns:w="{W}"><w:body>{"".join(paragraphs)}<w:sectPr/></w:body></w:document>'
+        footer = f'<w:ftr xmlns:w="{W}"><w:p><w:r><w:instrText>PAGE</w:instrText></w:r><w:r><w:t>1</w:t></w:r></w:p></w:ftr>'
+        stream = io.BytesIO()
+        with zipfile.ZipFile(stream, "w") as archive:
+            archive.writestr("[Content_Types].xml", '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"/>')
+            archive.writestr("word/document.xml", document)
+            archive.writestr("word/footer1.xml", footer)
+        output, report = format_docx(stream.getvalue(), "enterprise_training")
+        self.assertEqual(report["roles"]["table"], 1)
+        self.assertEqual(report["roles"]["image"], 1)
+        with zipfile.ZipFile(io.BytesIO(output)) as archive:
+            root = ET.fromstring(archive.read("word/document.xml"))
+            footer_root = ET.fromstring(archive.read("word/footer1.xml"))
+        q = lambda name: f"{{{W}}}{name}"
+        items = list(root.iter(q("p")))
+        self.assertEqual(root.find(f".//{q('pgMar')}").get(q("top")), "2098")
+        self.assertEqual(items[0].find(f"{q('pPr')}/{q('jc')}").get(q("val")), "center")
+        self.assertEqual(items[1].find(f"{q('pPr')}/{q('spacing')}").get(q("line")), "560")
+        self.assertEqual(items[1].find(f".//{q('rFonts')}").get(q("ascii")), "Times New Roman")
+        self.assertEqual(items[1].find(f".//{q('rFonts')}").get(q("eastAsia")), "仿宋_GB2312")
+        self.assertEqual(items[2].find(f".//{q('rFonts')}").get(q("eastAsia")), "黑体")
+        self.assertEqual(items[3].find(f"{q('pPr')}/{q('spacing')}").get(q("before")), "560")
+        self.assertEqual(items[4].find(f".//{q('rFonts')}").get(q("eastAsia")), "黑体")
+        self.assertEqual(items[5].find(f"{q('pPr')}/{q('spacing')}").get(q("lineRule")), "auto")
+        self.assertEqual(items[6].find(f"{q('pPr')}/{q('spacing')}").get(q("line")), "400")
+        self.assertEqual(items[6].find(f".//{q('rFonts')}").get(q("eastAsia")), "宋体")
+        self.assertEqual(items[6].find(f".//{q('sz')}").get(q("val")), "28")
+        self.assertEqual(footer_root.find(f".//{q('rFonts')}").get(q("eastAsia")), "宋体")
+        self.assertEqual(footer_root.find(f".//{q('sz')}").get(q("val")), "28")
 
     def test_desktop_output_is_saved_beside_source_without_overwrite(self):
         with tempfile.TemporaryDirectory() as directory:
