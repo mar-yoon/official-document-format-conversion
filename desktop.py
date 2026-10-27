@@ -10,7 +10,7 @@ from pathlib import Path
 import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
 
-from formatter import FormatError, format_docx, inspect, load_templates
+from formatter import FormatError, format_docx, load_templates
 
 
 BG = "#F7F5F0"
@@ -26,11 +26,36 @@ def human_size(byte_count: int) -> str:
     return f"{byte_count / 1024:.1f} KB" if byte_count < 1024 * 1024 else f"{byte_count / 1024 / 1024:.1f} MB"
 
 
+def next_output_path(source: Path) -> Path:
+    """Choose a new name beside the source without replacing an earlier result."""
+    base = source.with_name(f"{source.stem}_标准格式.docx")
+    if not base.exists():
+        return base
+    number = 2
+    while True:
+        candidate = source.with_name(f"{source.stem}_标准格式_{number}.docx")
+        if not candidate.exists():
+            return candidate
+        number += 1
+
+
+def write_output(data: bytes, output_path: Path) -> None:
+    temp_path = None
+    try:
+        with tempfile.NamedTemporaryFile(prefix="gongwen-", suffix=".docx", dir=output_path.parent, delete=False) as stream:
+            temp_path = Path(stream.name)
+            stream.write(data)
+        os.replace(temp_path, output_path)
+    finally:
+        if temp_path and temp_path.exists():
+            temp_path.unlink()
+
+
 class DesktopApp(tk.Tk):
     def __init__(self) -> None:
         super().__init__()
         self.title("公文格式助手")
-        self.geometry("820x690")
+        self.geometry("820x720")
         self.minsize(680, 590)
         self.configure(bg=BG)
         self.selected_path: Path | None = None
@@ -56,7 +81,7 @@ class DesktopApp(tk.Tk):
         intro = tk.Frame(self, bg=BG)
         intro.pack(fill="x", padx=46, pady=(0, 25))
         self._label(intro, "格式有标准，内容更从容。", 25, INK, True).pack(anchor="w")
-        self._label(intro, "选择 Word 文档，检查识别结果，再保存调整后的文件。文档只在这台电脑上处理。", 11, MUTED).pack(anchor="w", pady=(9, 0))
+        self._label(intro, "选择 Word 文档后会自动生成新文件，保存在原文档旁边。文档只在这台电脑上处理。", 11, MUTED).pack(anchor="w", pady=(9, 0))
 
         card = tk.Frame(self, bg=WHITE, highlightbackground=LINE, highlightthickness=1)
         card.pack(fill="both", expand=True, padx=46, pady=(0, 20))
@@ -83,30 +108,35 @@ class DesktopApp(tk.Tk):
                   font=(self.font_name, 11, "bold"), fg=TEAL, bg=WHITE, relief="flat",
                   padx=22, pady=8, cursor="hand2").pack()
 
-        self._label(content, "03  检查与保存", 10, TEAL, True).pack(anchor="w", pady=(8, 8))
+        self._label(content, "03  生成结果", 10, TEAL, True).pack(anchor="w", pady=(8, 8))
+        actions = tk.Frame(content, bg=WHITE)
+        actions.pack(fill="x", pady=(0, 12))
+        self.save_button = tk.Button(actions, text="另存为…", command=self.save_formatted,
+                                     font=(self.font_name, 11, "bold"), fg=WHITE, bg=TEAL,
+                                     activebackground="#075E59", activeforeground=WHITE,
+                                     relief="flat", padx=16, pady=8, state="disabled", cursor="hand2")
+        self.save_button.pack(side="left")
+        self.open_button = tk.Button(actions, text="打开输出文件", command=self.open_output,
+                                     font=(self.font_name, 10), fg=TEAL, bg=WHITE,
+                                     relief="flat", padx=12, pady=8, state="disabled", cursor="hand2")
+        self.open_button.pack(side="left", padx=12)
+        self.folder_button = tk.Button(actions, text="查看文件位置", command=self.open_output_folder,
+                                      font=(self.font_name, 10), fg=TEAL, bg=WHITE,
+                                      relief="flat", padx=12, pady=8, state="disabled", cursor="hand2")
+        self.folder_button.pack(side="left")
+        self.status = self._label(actions, "就绪", 10, MUTED)
+        self.status.pack(side="right")
+        self.output_label = self._label(content, "尚未生成文件", 10, MUTED, wraplength=630, justify="left")
+        self.output_label.pack(anchor="w", pady=(0, 10))
         report_frame = tk.Frame(content, bg="#FBFCFA", highlightbackground=LINE, highlightthickness=1)
         report_frame.pack(fill="both", expand=True)
-        self.report_text = tk.Text(report_frame, wrap="word", height=7, relief="flat", bg="#FBFCFA",
-                                   fg=INK, font=(self.font_name, 10), padx=14, pady=12, spacing1=3, spacing3=6)
+        self.report_text = tk.Text(report_frame, wrap="word", height=4, relief="flat", bg="#FBFCFA",
+                                   fg=INK, font=(self.font_name, 10), padx=14, pady=10, spacing1=3, spacing3=6)
         scrollbar = ttk.Scrollbar(report_frame, orient="vertical", command=self.report_text.yview)
         self.report_text.configure(yscrollcommand=scrollbar.set)
         self.report_text.pack(side="left", fill="both", expand=True)
         scrollbar.pack(side="right", fill="y")
-        self._set_report("请选择文档以查看识别结果。")
-
-        actions = tk.Frame(content, bg=WHITE)
-        actions.pack(fill="x", pady=(18, 0))
-        self.save_button = tk.Button(actions, text="保存调整后的文档  →", command=self.save_formatted,
-                                     font=(self.font_name, 11, "bold"), fg=WHITE, bg=TEAL,
-                                     activebackground="#075E59", activeforeground=WHITE,
-                                     relief="flat", padx=22, pady=11, state="disabled", cursor="hand2")
-        self.save_button.pack(side="left")
-        self.open_button = tk.Button(actions, text="打开输出文件", command=self.open_output,
-                                     font=(self.font_name, 10), fg=TEAL, bg=WHITE,
-                                     relief="flat", padx=16, pady=10, state="disabled", cursor="hand2")
-        self.open_button.pack(side="left", padx=12)
-        self.status = self._label(actions, "就绪", 10, MUTED)
-        self.status.pack(side="right")
+        self._set_report("请选择文档以生成结果。")
 
         footer = tk.Frame(self, bg=BG)
         footer.pack(fill="x", padx=46, pady=(0, 22))
@@ -135,6 +165,8 @@ class DesktopApp(tk.Tk):
         self.file_name.configure(text=candidate.name)
         self.file_info.configure(text=human_size(candidate.stat().st_size))
         self.open_button.configure(state="disabled")
+        self.folder_button.configure(state="disabled")
+        self.output_label.configure(text="正在生成文件…")
         self._reanalyze()
 
     def _reanalyze(self) -> None:
@@ -142,32 +174,32 @@ class DesktopApp(tk.Tk):
             return
         self.busy = True
         self.save_button.configure(state="disabled")
-        self.status.configure(text="正在检查…")
+        self.status.configure(text="正在生成…")
         path, template = self.selected_path, self._template_id()
 
         def work():
             try:
-                report = inspect(path.read_bytes(), template)
-                self.after(0, lambda: self._analysis_done(report))
+                result, report = format_docx(path.read_bytes(), template)
+                output_path = next_output_path(path)
+                write_output(result, output_path)
+                self.after(0, lambda: self._save_done(output_path, report))
             except (OSError, FormatError) as exc:
                 self.after(0, lambda error=str(exc): self._failed(error))
 
         threading.Thread(target=work, daemon=True).start()
 
-    def _analysis_done(self, report) -> None:
-        self.busy = False
+    def _set_analysis(self, report) -> None:
         lines = [f"识别标题：{report['title'] or '未检测到'}",
                  f"段落数量：{report['paragraphs']}    处理依据：{report['basis']}"]
         if report["warnings"]:
             lines.extend(["", "需要人工复核："] + [f"• {item}" for item in report["warnings"]])
         self._set_report("\n".join(lines))
-        self.save_button.configure(state="normal")
-        self.status.configure(text="检查完成")
 
     def _failed(self, error: str) -> None:
         self.busy = False
-        self.save_button.configure(state="disabled")
+        self.save_button.configure(state="normal" if self.selected_path else "disabled")
         self.status.configure(text="处理失败")
+        self.output_label.configure(text="未生成文件；可尝试选择其他保存位置。")
         self._set_report(error)
         messagebox.showerror("无法处理文档", error)
 
@@ -191,15 +223,7 @@ class DesktopApp(tk.Tk):
         def work():
             try:
                 result, report = format_docx(source.read_bytes(), template)
-                temp_path = None
-                try:
-                    with tempfile.NamedTemporaryFile(prefix="gongwen-", suffix=".docx", dir=output_path.parent, delete=False) as stream:
-                        temp_path = Path(stream.name)
-                        stream.write(result)
-                    os.replace(temp_path, output_path)
-                finally:
-                    if temp_path and temp_path.exists():
-                        temp_path.unlink()
+                write_output(result, output_path)
                 self.after(0, lambda: self._save_done(output_path, report))
             except (OSError, FormatError) as exc:
                 self.after(0, lambda error=str(exc): self._failed(error))
@@ -211,8 +235,10 @@ class DesktopApp(tk.Tk):
         self.last_output = path
         self.save_button.configure(state="normal")
         self.open_button.configure(state="normal")
+        self.folder_button.configure(state="normal")
         self.status.configure(text="保存完成")
-        messagebox.showinfo("排版完成", f"已保存到：\n{path}\n\n正式使用前，请复核文档中的红头、印章、页码和复杂版式。")
+        self.output_label.configure(text=f"已生成：{path}")
+        self._set_analysis(report)
 
     def open_output(self) -> None:
         if not self.last_output or not self.last_output.exists():
@@ -224,6 +250,17 @@ class DesktopApp(tk.Tk):
                 subprocess.Popen(["open", str(self.last_output)])
         except OSError as exc:
             messagebox.showerror("无法打开文档", str(exc))
+
+    def open_output_folder(self) -> None:
+        if not self.last_output or not self.last_output.exists():
+            return
+        try:
+            if sys.platform == "win32":
+                subprocess.Popen(["explorer", "/select,", str(self.last_output)])
+            else:
+                subprocess.Popen(["open", "-R", str(self.last_output)])
+        except OSError as exc:
+            messagebox.showerror("无法打开文件位置", str(exc))
 
 
 if __name__ == "__main__":

@@ -1,11 +1,10 @@
 # 公文格式助手
 
-面向 Mac 和 Windows 的离线 Word 公文排版程序。桌面版不需要浏览器、服务器或小程序账号。原始文件留在本机，用户自行选择输出位置。
+面向 Mac 和 Windows 的离线 Word 公文排版程序。桌面版不需要浏览器、服务器或小程序账号。选中文档后，程序会自动在原文件旁生成“原文件名_标准格式.docx”，保留原件；也可另存到其他位置。
 
 ## 直接使用
 
-- 当前已生成 Apple Silicon Mac 测试包：`dist/公文格式助手-macOS-arm64.zip`。解压后双击 `.app`。
-- Windows `.exe` 需在 Windows 环境构建。仓库已有跨平台构建脚本和 GitHub Actions 工作流；连接 GitHub 仓库并运行 `Build desktop downloads` 后，可下载 Windows 和 Mac 的 ZIP 构建产物。
+- GitHub Actions 的 `Build desktop downloads` 工作流会构建 Windows、Apple Silicon Mac 和 Intel Mac 的 ZIP 安装包。
 - 也可在有 Python 和 Tkinter 的电脑上运行 `python desktop.py`。
 
 下载包中的 `使用说明.md` 面向普通用户。公开分发前，Mac 版仍需开发者签名和公证，Windows 版建议代码签名。

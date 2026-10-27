@@ -1,13 +1,16 @@
 import io
 import json
 import threading
+import tempfile
 import unittest
 import urllib.request
 import zipfile
 from http.server import ThreadingHTTPServer
+from pathlib import Path
 from xml.etree import ElementTree as ET
 
 from app import Handler
+from desktop import next_output_path, write_output
 from formatter import FormatError, W, format_docx, inspect
 
 
@@ -44,6 +47,19 @@ class FormatterTests(unittest.TestCase):
     def test_invalid_input_rejected(self):
         with self.assertRaises(FormatError):
             inspect(b"not a docx")
+
+    def test_desktop_output_is_saved_beside_source_without_overwrite(self):
+        with tempfile.TemporaryDirectory() as directory:
+            source = Path(directory) / "通知.docx"
+            source.write_bytes(fixture())
+            result, report = format_docx(source.read_bytes())
+            first = next_output_path(source)
+            write_output(result, first)
+            self.assertEqual(first.name, "通知_标准格式.docx")
+            self.assertEqual(inspect(first.read_bytes())["title"], report["title"])
+            self.assertEqual(source.read_bytes(), fixture())
+            second = next_output_path(source)
+            self.assertEqual(second.name, "通知_标准格式_2.docx")
 
     def test_mini_program_upload_download(self):
         server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
