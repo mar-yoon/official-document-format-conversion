@@ -19,9 +19,11 @@
     "attachment": {"space_before_pt": 28},
     "attachment_label": {"font": "黑体", "size_pt": 16, "first_line_chars": 0},
     "image": {"align": "center", "first_line_chars": 0, "line_rule": "auto"},
-    "table": {"font": "宋体", "size_pt": 14, "preserve_paragraph": true},
+    "table": {"font": "宋体", "size_pt": 10.5, "preserve_paragraph": true},
+    "toc": {"font": "仿宋_GB2312", "size_pt": 14, "first_line_chars": 0},
     "signature": {"align": "right", "first_line_chars": 0},
     "date": {"align": "right", "first_line_chars": 0}
   },
-  "footer_page_number": {"font": "宋体", "size_pt": 14}
+  "footer_page_number": {"font": "宋体", "size_pt": 14},
+  "normalize_punctuation": true
 }
