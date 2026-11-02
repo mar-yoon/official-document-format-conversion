@@ -8,6 +8,7 @@ from __future__ import annotations
 import io
 import json
 import re
+import string
 import zipfile
 from pathlib import Path
 from typing import Dict, List, Tuple
@@ -164,6 +165,22 @@ def classify_document(root: ET.Element, items: List[ET.Element], template: Dict)
         for i, p in enumerate(items):
             if roles[i] == "empty" and p.find(".//w:drawing", NS) is not None:
                 roles[i] = "image"
+    if template["id"] == "enterprise_training":
+        nonempty = [(i, paragraph_text(p)) for i, p in enumerate(items) if paragraph_text(p) and i not in table_indices]
+        if nonempty and nonempty[0][1] == "关于":
+            end = next((i for i, value in nonempty[1:5] if value.endswith("报告")), None)
+            if end is not None:
+                for i, _ in nonempty:
+                    if i > end:
+                        break
+                    roles[i] = "title"
+        toc = next((i for i, value in nonempty if value == "目录"), None)
+        if toc is not None:
+            boundary = next((i for i in range(toc + 1, len(items)) if items[i].find(".//w:sectPr", NS) is not None), None)
+            if boundary is not None:
+                for i in range(toc, boundary + 1):
+                    if i not in table_indices and paragraph_text(items[i]):
+                        roles[i] = "toc"
     return roles
 
 
@@ -177,7 +194,7 @@ def inspect(data: bytes, template_id: str = "gov_official") -> Dict:
     items = paragraphs(root)
     roles = classify_document(root, items, template)
     counts = {role: roles.count(role) for role in sorted(set(roles)) if role != "empty"}
-    title = next((paragraph_text(p) for p, role in zip(items, roles) if role == "title"), "")
+    title = "".join(paragraph_text(p) for p, role in zip(items, roles) if role == "title") if template["id"] == "enterprise_training" else next((paragraph_text(p) for p, role in zip(items, roles) if role == "title"), "")
     warnings = []
     if not title:
         warnings.append("没有检测到正文文字，请检查上传的文件。")
@@ -270,6 +287,51 @@ def set_page(root: ET.Element, template: Dict) -> None:
             margin.set(q(key), mm_twips(page[source]))
 
 
+def format_enterprise_layout(root: ET.Element, items: List[ET.Element], roles: List[str], template: Dict) -> None:
+    toc = next((i for i, p in enumerate(items) if paragraph_text(p) == "目录"), None)
+    if toc is not None:
+        cover_titles = [i for i in range(toc) if roles[i] == "title"]
+        if len(cover_titles) > 1:
+            for i in range(toc):
+                if roles[i] == "empty":
+                    spacing = ensure(ensure(items[i], "pPr", first=True), "spacing")
+                    spacing.set(q("line"), "20")
+                    spacing.set(q("lineRule"), "exact")
+                    spacing.set(q("before"), "0")
+                    spacing.set(q("after"), "0")
+            for i in range(cover_titles[0], cover_titles[-1]):
+                ensure(ensure(items[i], "pPr", first=True), "keepNext")
+            first_spacing = ensure(ensure(items[cover_titles[0]], "pPr", first=True), "spacing")
+            first_spacing.set(q("before"), "1000")
+            company = next((i for i in range(cover_titles[-1] + 1, toc) if "北京顺创产业创业投资管理有限公司" in paragraph_text(items[i])), None)
+            if company is not None:
+                spacing = ensure(ensure(items[company], "pPr", first=True), "spacing")
+                spacing.set(q("before"), "6000")
+                ensure(ensure(items[company], "pPr", first=True), "keepNext")
+    for table in root.iter(q("tbl")):
+        props = ensure(table, "tblPr", first=True)
+        width = ensure(props, "tblW")
+        width.set(q("type"), "pct")
+        width.set(q("w"), "5000")
+        ensure(props, "tblLayout").set(q("type"), "autofit")
+        indent = ensure(props, "tblInd")
+        indent.set(q("type"), "dxa")
+        indent.set(q("w"), "0")
+        first_row = table.find(q("tr"))
+        if first_row is None:
+            continue
+        for cell in first_row.findall(q("tc")):
+            shade = ensure(ensure(cell, "tcPr", first=True), "shd")
+            shade.set(q("fill"), "D9D9D9")
+            for attribute in ("themeFill", "themeFillShade", "themeFillTint"):
+                shade.attrib.pop(q(attribute), None)
+            for run in cell.iter(q("r")):
+                ensure(ensure(run, "rPr", first=True), "b").set(q("val"), "1")
+
+
+PUNCTUATION_MAP = str.maketrans({char: chr(ord(char) + 65248) for char in string.punctuation})
+
+
 def set_existing_footer_page_font(package: Dict[str, bytes], template: Dict) -> None:
     settings = template.get("footer_page_number")
     if not settings:
@@ -330,6 +392,12 @@ def format_docx(data: bytes, template_id: str = "gov_official") -> Tuple[bytes, 
     for p, role in zip(items, roles):
         if role != "empty":
             set_format(p, role, template)
+    if template["id"] == "enterprise_training":
+        format_enterprise_layout(root, items, roles, template)
+    if template.get("normalize_punctuation"):
+        for node in root.iter(q("t")):
+            if node.text:
+                node.text = node.text.translate(PUNCTUATION_MAP)
     package["word/document.xml"] = serialize_document(root, package["word/document.xml"])
     set_existing_footer_page_font(package, template)
     out = io.BytesIO()
