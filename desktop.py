@@ -112,8 +112,8 @@ class DesktopApp(tk.Tk):
         actions = tk.Frame(content, bg=WHITE)
         actions.pack(fill="x", pady=(0, 12))
         self.save_button = tk.Button(actions, text="另存为…", command=self.save_formatted,
-                                     font=(self.font_name, 11, "bold"), fg=WHITE, bg=TEAL,
-                                     activebackground="#075E59", activeforeground=WHITE,
+                                     font=(self.font_name, 10), fg=TEAL, bg=WHITE,
+                                     disabledforeground=TEAL, activebackground=WHITE, activeforeground=TEAL,
                                      relief="flat", padx=16, pady=8, state="disabled", cursor="hand2")
         self.save_button.pack(side="left")
         self.open_button = tk.Button(actions, text="打开输出文件", command=self.open_output,
@@ -128,6 +128,11 @@ class DesktopApp(tk.Tk):
         self.status.pack(side="right")
         self.output_label = self._label(content, "尚未生成文件", 10, MUTED, wraplength=630, justify="left")
         self.output_label.pack(anchor="w", pady=(0, 10))
+        report_heading = tk.Frame(content, bg=WHITE)
+        report_heading.pack(fill="x")
+        self._label(report_heading, "识别结果与复核提示", 10, TEAL, True).pack(side="left")
+        tk.Button(report_heading, text="放大阅读", command=self.expand_report,
+                  font=(self.font_name, 10), fg=TEAL, bg=WHITE, relief="flat").pack(side="right")
         report_frame = tk.Frame(content, bg="#FBFCFA", highlightbackground=LINE, highlightthickness=1)
         report_frame.pack(fill="both", expand=True)
         self.report_text = tk.Text(report_frame, wrap="word", height=4, relief="flat", bg="#FBFCFA",
@@ -147,6 +152,30 @@ class DesktopApp(tk.Tk):
         self.report_text.delete("1.0", "end")
         self.report_text.insert("1.0", message)
         self.report_text.configure(state="disabled")
+        self.report_message = message
+        if getattr(self, "expanded_report", None) and self.expanded_report.winfo_exists():
+            self.expanded_report_text.configure(state="normal")
+            self.expanded_report_text.delete("1.0", "end")
+            self.expanded_report_text.insert("1.0", message)
+            self.expanded_report_text.configure(state="disabled")
+
+    def expand_report(self) -> None:
+        if getattr(self, "expanded_report", None) and self.expanded_report.winfo_exists():
+            self.expanded_report.lift()
+            return
+        window = tk.Toplevel(self)
+        window.title("识别结果与复核提示")
+        window.geometry("760x520")
+        window.minsize(420, 260)
+        text_area = tk.Text(window, wrap="word", font=(self.font_name, 12), padx=20, pady=18)
+        scrollbar = ttk.Scrollbar(window, orient="vertical", command=text_area.yview)
+        text_area.configure(yscrollcommand=scrollbar.set)
+        text_area.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
+        text_area.insert("1.0", self.report_message)
+        text_area.configure(state="disabled")
+        self.expanded_report = window
+        self.expanded_report_text = text_area
 
     def _template_id(self) -> str:
         index = [item["name"] for item in self.templates].index(self.template_name.get())
