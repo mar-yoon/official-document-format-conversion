@@ -5,7 +5,7 @@
   "basis": "GB/T 9704—2012",
   "source_url": "https://openstd.samr.gov.cn/bzgk/std/newGbInfo?hcno=F3CC9BEF482524C895FDA7A08BB4A70E",
   "page": {"width_mm": 210, "height_mm": 297, "top_mm": 37, "bottom_mm": 35, "left_mm": 28, "right_mm": 26},
-  "default": {"font": "仿宋_GB2312", "size_pt": 16, "line_pt": 28.8, "color": "000000"},
+  "default": {"font": "仿宋_GB2312", "latin_font": "Times New Roman", "size_pt": 16, "line_pt": 28.8, "color": "000000"},
   "roles": {
     "title": {"font": "方正小标宋简体", "size_pt": 22, "align": "center", "first_line_chars": 0, "bold": false},
     "agency": {"font": "方正小标宋简体", "size_pt": 22, "align": "center", "color": "C00000", "first_line_chars": 0},
